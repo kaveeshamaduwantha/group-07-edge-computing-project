@@ -1,0 +1,7 @@
+path: /content/drive/MyDrive/myDataSet/dataset_augmented
+train: images/train
+val: images/val
+test: images/test
+names:
+  0: student
+  1: cleaner
