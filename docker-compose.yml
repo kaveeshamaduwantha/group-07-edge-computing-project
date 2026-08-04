@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  smart-classroom:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: smart-classroom-edge:latest
+    container_name: smart_classroom_ai
+    ports:
+      - "5000:5000"
+    environment:
+      - VIDEO_SOURCE=0
+    volumes:
+      - ./edge_app/uploads:/app/edge_app/uploads
+    restart: unless-stopped

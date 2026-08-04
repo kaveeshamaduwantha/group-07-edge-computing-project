@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Smart Classroom Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg-main: #ffffff;
+      --bg-sidebar: #f3f4f8;
+      --card-dark: #0e182a;
+      --text-dark: #1e293b;
+      --green-bg: #dcf5e7;
+      --green-text: #15803d;
+      --radius-lg: 20px;
+      --font-sans: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-main);
+      color: var(--text-dark);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ── LEFT SIDEBAR (CONFIG & THRESHOLDS) ────────────────────────── */
+    .sidebar {
+      width: 290px;
+      min-width: 290px;
+      background-color: var(--bg-sidebar);
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      border-right: 1px solid #e2e8f0;
+      overflow-y: auto;
+      height: 100vh;
+    }
+
+    .sidebar-header { display: flex; align-items: center; gap: 8px; }
+    .gear-icon { font-size: 1.2rem; color: #64748b; }
+    .sidebar-title { font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+    .sidebar-subtitle { font-size: 0.76rem; color: #64748b; line-height: 1.35; margin-top: -8px; }
+
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-label { font-size: 0.73rem; font-weight: 600; color: #475569; }
+
+    .input-pill {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 3px 6px;
+    }
+
+    .pill-btn {
+      background: none;
+      border: none;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #334155;
+      width: 26px;
+      height: 26px;
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pill-btn:hover { background: #f1f5f9; }
+
+    .pill-val {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #1e293b;
+      width: 36px;
+      text-align: center;
+    }
+
+    .btn-save {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      align-self: flex-start;
+      transition: all 0.15s;
+    }
+    .btn-save:hover { background: #f8fafc; border-color: #94a3b8; }
+
+    .alert-success {
+      background: var(--green-bg);
+      color: var(--green-text);
+      font-size: 0.72rem;
+      line-height: 1.4;
+      padding: 10px 12px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .fps-section {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .fps-header { font-size: 0.76rem; font-weight: 700; color: #334155; }
+
+    .upload-box { margin-top: auto; padding-top: 10px; border-top: 1px solid #e2e8f0; }
+
+    .btn-upload {
+      width: 100%;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 9px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-upload:hover { background: #2563eb; }
+
+    #finput { display: none; }
+
+    /* ── MAIN CONTENT AREA ────────────────────────────────────────── */
+    .main-content {
+      flex: 1;
+      padding: 24px 30px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow: hidden;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .main-title { font-size: 1.8rem; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; }
+
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.82rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .top-right span { cursor: pointer; }
+
+    /* Janitor Timer Alert Banner */
+    .janitor-alert {
+      background: #7e22ce;
+      color: #ffffff;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(126,34,206,0.25);
+    }
+    .janitor-timer {
+      background: rgba(255,255,255,0.2);
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+    }
+
+    /* ── TWO COLUMN GRID LAYOUT (AC SIM LEFT | VIDEO RIGHT) ────────── */
+    .dashboard-split {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 20px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    @media (max-width: 1200px) {
+      .dashboard-split { grid-template-columns: 400px 1fr; }
+    }
+
+    /* NAVY DASHBOARD WIDGET (LEFT COLUMN) */
+    .dashboard-card {
+      background-color: var(--card-dark);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: 0 16px 32px rgba(14,24,42,0.2);
+      overflow-y: auto;
+    }
+
+    /* Hero Stage */
+    .hero-stage {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 4px 0;
+    }
+
+    .avatar-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar-face {
+      width: 76px;
+      height: 76px;
+      background: #fca5a5;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      transition: background 0.3s;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+    }
+    .avatar-face.cooling { background: #93c5fd; }
+    .avatar-face.medium { background: #fde047; }
+    .avatar-face.high { background: #f87171; }
+
+    .speech-bubble {
+      background: #ffffff;
+      color: #0f172a;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+      white-space: nowrap;
+    }
+
+    /* AC Visual Card with Temp Up/Down Controls */
+    .ac-widget-card {
+      background: #f8fafc;
+      color: #0f172a;
+      width: 200px;
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      position: relative;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+    }
+
+    .ac-temp-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .ac-icon-box {
+      width: 44px;
+      height: 44px;
+      background: #1e293b;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      color: #38bdf8;
+      margin-top: 4px;
+    }
+
+    .ac-glow-strip {
+      width: 80%;
+      height: 3px;
+      background: #fdba74;
+      border-radius: 2px;
+      transition: background 0.3s;
+    }
+    .ac-glow-strip.cooling { background: #38bdf8; box-shadow: 0 0 6px #38bdf8; }
+
+    /* Interactive Temperature Controls on AC Card */
+    .ac-temp-ctrl {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #e2e8f0;
+      border-radius: 8px;
+      padding: 2px 6px;
+      margin-top: 2px;
+    }
+
+    .ac-temp-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #0f172a;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .ac-temp-btn:hover { background: #3b82f6; color: white; border-color: #3b82f6; }
+
+    .ac-temp-display {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #0f172a;
+      min-width: 38px;
+      text-align: center;
+    }
+
+    .ac-name { font-size: 0.78rem; font-weight: 700; color: #334155; }
+    .ac-state-sub { font-size: 0.62rem; color: #94a3b8; font-weight: 600; }
+
+    /* Sliders / Metrics Progress */
+    .metrics-container {
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .metric-row { display: flex; align-items: center; gap: 12px; }
+    .metric-title { font-size: 0.8rem; font-weight: 700; width: 95px; color: #e2e8f0; }
+
+    .progress-track {
+      flex: 1;
+      height: 8px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill { height: 100%; background: #60a5fa; border-radius: 999px; transition: width 0.4s; }
+
+    .metric-num {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      font-weight: 600;
+      width: 36px;
+      text-align: right;
+      color: #f8fafc;
+    }
+
+    /* Bottom 4 White Cards */
+    .bottom-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .mini-card {
+      background: #ffffff;
+      color: #0f172a;
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .mini-label { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.8px; color: #64748b; text-transform: uppercase; }
+    .mini-val { font-size: 1.05rem; font-weight: 800; color: #0f172a; }
+    .mini-val.mono { font-family: var(--font-mono); font-size: 0.95rem; }
+
+    /* ── LIVE VIDEO PANEL (RIGHT COLUMN) ──────────────────────────── */
+    .video-panel {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      min-height: 0;
+    }
+
+    .video-title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+
+    .v-title { font-size: 0.92rem; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px; }
+
+    .video-frame-container {
+      flex: 1;
+      width: 100%;
+      background: #060911;
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      min-height: 0;
+    }
+
+    #vstream {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    /* ── RIGHT PANEL 3-SECTION LAYOUT ────────────────────────────── */
+    .right-panel {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* Section: Video (smaller) */
+    .video-section {
+      flex: 0 0 auto;
+    }
+    .video-title-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      margin-bottom: 6px;
+    }
+    .v-title { font-size: 0.88rem; font-weight: 700; color: #0f172a; }
+    .video-frame-container {
+      height: 200px;
+      width: 100%;
+      background: #060911;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    #vstream {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    /* Confidence badge */
+    .conf-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .conf-label { font-size: 0.72rem; font-weight: 600; color: #64748b; }
+    .conf-bar-track {
+      flex: 1;
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .conf-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #06b6d4);
+      border-radius: 999px;
+      transition: width 0.4s;
+    }
+    .conf-badge {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #0369a1;
+      background: #e0f2fe;
+      padding: 2px 8px;
+      border-radius: 999px;
+      min-width: 42px;
+      text-align: center;
+    }
+
+    /* Divider */
+    .panel-divider {
+      border: none;
+      border-top: 1px solid #e2e8f0;
+      margin: 0;
+    }
+
+    /* Section: Charts row */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      flex: 0 0 auto;
+    }
+    .chart-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 14px;
+    }
+    .chart-box-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .chart-box canvas { display: block; }
+
+    /* Section: Detection Logs */
+    .log-section {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .log-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      flex-shrink: 0;
+    }
+    .log-container {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-height: 80px;
+      max-height: 160px;
+    }
+    .log-entry {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid #f1f5f9;
+      font-size: 0.71rem;
+      animation: fadeSlide 0.3s ease;
+    }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .log-time { font-family: var(--font-mono); color: #94a3b8; font-size: 0.68rem; flex-shrink: 0; }
+    .log-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .log-dot.low    { background: #22c55e; }
+    .log-dot.medium { background: #f59e0b; }
+    .log-dot.high   { background: #ef4444; }
+    .log-dot.janitor{ background: #a855f7; }
+    .log-msg { color: #334155; flex: 1; }
+    .log-conf { font-family: var(--font-mono); font-size: 0.68rem; color: #94a3b8; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+  <!-- ── LEFT SIDEBAR (CONFIG & THRESHOLDS) ────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span class="gear-icon">⚙️</span>
+      <h2 class="sidebar-title">Thresholds</h2>
+    </div>
+    <p class="sidebar-subtitle">Adjust occupancy bands and AC temperatures</p>
+
+    <!-- MEDIUM starts at -->
+    <div class="form-group">
+      <label class="form-label">MEDIUM starts at (people)</label>
+      <div class="input-pill">
+        <button class="pill-btn" onclick="adj('medium_min',-1)">−</button>
+        <span class="pill-val" id="v-medium_min">3</span>
+        <button class="pill-btn" onclick="adj('medium_min',+1)">+</button>
+      </div>
+    </div>
+
+    <!-- HIGH starts at -->
+    <div class="form-group">
+      <label class="form-label">HIGH starts at (people)</label>
+      <div class="input-pill">
+        <button class="pill-btn" onclick="adj('high_min',-1)">−</button>
+        <span class="pill-val" id="v-high_min">10</span>
+        <button class="pill-btn" onclick="adj('high_min',+1)">+</button>
+      </div>
+    </div>
+
+    <!-- MEDIUM temp -->
+    <div class="form-group">
+      <label class="form-label">MEDIUM temperature (°C)</label>
+      <div class="input-pill">
+        <button class="pill-btn" onclick="adj('medium_temp',-1)">−</button>
+        <span class="pill-val" id="v-medium_temp">24</span>
+        <button class="pill-btn" onclick="adj('medium_temp',+1)">+</button>
+      </div>
+    </div>
+
+    <!-- HIGH temp -->
+    <div class="form-group">
+      <label class="form-label">HIGH temperature (°C)</label>
+      <div class="input-pill">
+        <button class="pill-btn" onclick="adj('high_temp',-1)">−</button>
+        <span class="pill-val" id="v-high_temp">20</span>
+        <button class="pill-btn" onclick="adj('high_temp',+1)">+</button>
+      </div>
+    </div>
+
+    <!-- Save Button -->
+    <button class="btn-save" onclick="saveThresholds()">Save thresholds</button>
+
+    <!-- Alert Success -->
+    <div class="alert-success" id="alert-success">
+      Thresholds updated — ac_sim.py will pick them up automatically.
+    </div>
+
+
+    <!-- Upload Box -->
+    <div class="upload-box">
+      <button class="btn-upload" onclick="document.getElementById('finput').click()">
+        📁 Upload Video Stream
+      </button>
+      <input type="file" id="finput" accept="video/*" onchange="uploadVideo(this)"/>
+    </div>
+
+  </aside>
+
+  <!-- ── MAIN CONTENT AREA ────────────────────────────────────────── -->
+  <main class="main-content">
+    <!-- Top Header Bar -->
+    <div class="top-bar">
+      <h1 class="main-title">Smart Classroom Dashboard</h1>
+    </div>
+
+    <!-- Janitor Timer Alert Banner -->
+    <div class="janitor-alert" id="janitor-alert">
+      <span>🧹 JANITOR DETECTED WITH BUCKET — AC OFF (CHECKING BACKGROUNDLY EVERY 5s)</span>
+      <span class="janitor-timer" id="janitor-timer">15.0s</span>
+    </div>
+
+    <!-- SPLIT LAYOUT: AC SIMULATION (LEFT) | LIVE VIDEO (RIGHT) -->
+    <div class="dashboard-split">
+      
+      <!-- LEFT COLUMN: NAVY AC SIMULATION WIDGET -->
+      <div class="dashboard-card">
+        <!-- Hero Stage -->
+        <div class="hero-stage">
+          <!-- Mood Avatar -->
+          <div class="avatar-container">
+            <div class="avatar-face" id="avatar-face">🙁</div>
+            <div class="speech-bubble" id="speech-bubble">AC is OFF, all quiet</div>
+          </div>
+
+          <!-- AC Visual Widget with Temp Up/Down buttons -->
+          <div class="ac-widget-card">
+            <div class="ac-temp-badge" id="ac-temp-badge">--°C</div>
+            <div class="ac-icon-box">❄️</div>
+            <div class="ac-glow-strip" id="ac-glow-strip"></div>
+            <div class="ac-label-group" style="text-align:center;">
+              <div class="ac-name">Classroom AC</div>
+              <div class="ac-state-sub" id="ac-state-sub">STATE - OFF</div>
+            </div>
+
+            <!-- Temperature Up / Down Controls -->
+            <div class="ac-temp-ctrl">
+              <button class="ac-temp-btn" onclick="adjTargetTemp(-1)">−</button>
+              <span class="ac-temp-display" id="ac-target-display">20°C</span>
+              <button class="ac-temp-btn" onclick="adjTargetTemp(+1)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sliders / Progress bars -->
+        <div class="metrics-container">
+          <div class="metric-row">
+            <span class="metric-title">People count</span>
+            <div class="progress-track">
+              <div class="progress-fill" id="people-bar" style="width: 10%;"></div>
+            </div>
+            <span class="metric-num" id="m-people-num">1</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-title">Cooling level</span>
+            <div class="progress-track">
+              <div class="progress-fill" id="cooling-bar" style="width: 0%;"></div>
+            </div>
+            <span class="metric-num" id="m-cooling-num">--°C</span>
+          </div>
+        </div>
+
+        <!-- Bottom 4 Mini Cards -->
+        <div class="bottom-cards-grid">
+          <div class="mini-card">
+            <span class="mini-label">OCCUPANCY</span>
+            <span class="mini-val" id="card-occ">LOW</span>
+          </div>
+          <div class="mini-card">
+            <span class="mini-label">PEOPLE COUNT</span>
+            <span class="mini-val" id="card-count">1</span>
+          </div>
+          <div class="mini-card">
+            <span class="mini-label">FAN SPEED</span>
+            <span class="mini-val" id="card-fans">0 fans</span>
+          </div>
+          <div class="mini-card">
+            <span class="mini-label">AC RUN TIME</span>
+            <span class="mini-val mono" id="card-runtime">00:00:00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: VIDEO + CHART + LOGS -->
+      <div class="right-panel">
+
+        <!-- SECTION 1: Video (minimised) -->
+        <div class="video-section">
+          <div class="video-title-bar">
+            <div class="v-title">📹 Live Camera &amp; YOLOv8 Detection</div>
+            <div style="font-size:0.7rem;color:#64748b;" id="vid-filename">No video loaded</div>
+          </div>
+          <div class="video-frame-container" style="position:relative;">
+            <div id="video-placeholder" style="
+              position:absolute;inset:0;display:flex;flex-direction:column;
+              align-items:center;justify-content:center;gap:10px;
+              background:#0e182a;border-radius:12px;z-index:10;">
+              <div style="font-size:2rem;">📹</div>
+              <div style="color:#64748b;font-size:0.85rem;font-weight:600;">No Video Loaded</div>
+              <button onclick="document.getElementById('finput').click()" style="
+                padding:7px 18px;background:#2563eb;color:#fff;border:none;
+                border-radius:7px;font-size:0.78rem;font-weight:600;
+                cursor:pointer;font-family:inherit;">⬆ Upload Video</button>
+            </div>
+            <img id="vstream" src="" alt="Live Stream" style="display:none;"/>
+          </div>
+          <div class="conf-row">
+            <span class="conf-label">AI Confidence</span>
+            <div class="conf-bar-track"><div class="conf-bar-fill" id="conf-bar" style="width:0%;"></div></div>
+            <span class="conf-badge" id="conf-badge">0%</span>
+          </div>
+          <div id="video-controls" style="display:none;align-items:center;justify-content:center;gap:8px;padding:6px 0 0;">
+            <button id="btn-play-pause" onclick="togglePlayPause()" style="padding:6px 18px;background:#2563eb;color:#fff;border:none;border-radius:7px;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;min-width:80px;">⏸ Pause</button>
+            <button onclick="stopVideo()" style="padding:6px 18px;background:#ef4444;color:#fff;border:none;border-radius:7px;font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;">⏹ Stop</button>
+          </div>
+        </div>
+
+        <hr class="panel-divider"/>
+
+        <!-- SECTION 2: AC Temperature Chart -->
+        <div class="charts-row">
+          <div class="chart-box">
+            <div class="chart-box-title">🌡️ AC Room Temperature over Time</div>
+            <canvas id="tempChart" height="90"></canvas>
+          </div>
+        </div>
+
+        <hr class="panel-divider"/>
+
+        <!-- SECTION 3: Detection Logs -->
+        <div class="log-section">
+          <div class="log-title">📋 Detection Log</div>
+          <div class="log-container" id="log-container"></div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    const thresholds = { medium_min:3, high_min:10, medium_temp:24, high_temp:20 };
+    let currentTargetTemp = 20;
+
+    function adj(key, delta) {
+      thresholds[key] = Math.max(1, thresholds[key] + delta);
+      document.getElementById('v-' + key).textContent = thresholds[key];
+    }
+
+    async function adjTargetTemp(delta) {
+      currentTargetTemp = Math.max(16, Math.min(28, currentTargetTemp + delta));
+      document.getElementById('ac-target-display').textContent = currentTargetTemp + '°C';
+      try { await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({target_temp:currentTargetTemp})}); } catch(e) {}
+    }
+
+    async function saveThresholds() {
+      try {
+        await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({thresholds})});
+        const el = document.getElementById('alert-success');
+        el.style.display = 'block';
+        setTimeout(() => el.style.display = 'none', 3000);
+      } catch(e) {}
+    }
+
+    let _videoPaused = false;
+
+    async function togglePlayPause() {
+      const btn = document.getElementById('btn-play-pause');
+      if (_videoPaused) {
+        await fetch('/api/play',{method:'POST'}); _videoPaused=false;
+        btn.textContent='⏸ Pause'; btn.style.background='#2563eb';
+      } else {
+        await fetch('/api/pause',{method:'POST'}); _videoPaused=true;
+        btn.textContent='▶ Play'; btn.style.background='#16a34a';
+      }
+    }
+
+    async function stopVideo() {
+      await fetch('/api/stop',{method:'POST'});
+      _videoPaused=false;
+      document.getElementById('btn-play-pause').textContent='⏸ Pause';
+      document.getElementById('btn-play-pause').style.background='#2563eb';
+      document.getElementById('vstream').src=''; document.getElementById('vstream').style.display='none';
+      document.getElementById('video-placeholder').style.display='flex';
+      document.getElementById('video-controls').style.display='none';
+      document.getElementById('vid-filename').textContent='No video loaded';
+
+      // Clear UI badges, confidence, and metric bars
+      document.getElementById('conf-bar').style.width = '0%';
+      document.getElementById('conf-badge').textContent = '0%';
+      document.getElementById('ac-temp-badge').textContent = '--°C';
+      document.getElementById('ac-state-sub').textContent = 'STATE - OFF';
+      document.getElementById('ac-glow-strip').className = 'ac-glow-strip';
+      document.getElementById('avatar-face').textContent = '🙁';
+      document.getElementById('avatar-face').className = 'avatar-face';
+      document.getElementById('speech-bubble').textContent = 'AC is OFF, no video running';
+      document.getElementById('m-people-num').textContent = '0';
+      document.getElementById('m-cooling-num').textContent = '--°C';
+      document.getElementById('people-bar').style.width = '0%';
+      document.getElementById('cooling-bar').style.width = '0%';
+      document.getElementById('card-occ').textContent = 'OFF';
+      document.getElementById('card-count').textContent = '0';
+      document.getElementById('card-fans').textContent = '0 fans';
+      document.getElementById('card-runtime').textContent = '00:00:00';
+
+      // Clear chart and logs
+      tempChart.data.labels = [];
+      tempChart.data.datasets[0].data = [];
+      tempChart.data.datasets[1].data = [];
+      tempChart.update();
+      document.getElementById('log-container').innerHTML = '';
+      _lastLogKey = null;
+    }
+
+    async function uploadVideo(input) {
+      const file = input.files[0]; if(!file) return;
+      const fd = new FormData(); fd.append('video',file);
+      document.getElementById('vid-filename').textContent='Uploading…';
+      try {
+        const r = await fetch('/api/upload',{method:'POST',body:fd});
+        const d = await r.json();
+        if(d.ok) {
+          _videoPaused=false;
+          document.getElementById('btn-play-pause').textContent='⏸ Pause';
+          document.getElementById('btn-play-pause').style.background='#2563eb';
+          currentTargetTemp=20; document.getElementById('ac-target-display').textContent='20°C';
+          document.getElementById('video-placeholder').style.display='none';
+          document.getElementById('video-controls').style.display='flex';
+          const vs=document.getElementById('vstream'); vs.src='/api/video_feed?t='+Date.now(); vs.style.display='block';
+          document.getElementById('vid-filename').textContent=d.filename;
+          tempChart.data.labels=[]; tempChart.data.datasets[0].data=[]; tempChart.data.datasets[1].data=[];
+          tempChart.update(); document.getElementById('log-container').innerHTML=''; _lastLogKey=null;
+        }
+      } catch(e) { document.getElementById('vid-filename').textContent='Upload failed'; }
+      input.value='';
+    }
+
+    // ── AC Temp Chart ────────────────────────────────────────────────────
+    const tempChart = new Chart(document.getElementById('tempChart'), {
+      type:'line',
+      data:{ labels:[], datasets:[
+        {label:'Room Temp (°C)',data:[],borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',borderWidth:2,pointRadius:0,tension:0.4,fill:true},
+        {label:'Target Temp (°C)',data:[],borderColor:'#f59e0b',backgroundColor:'transparent',borderWidth:1.5,borderDash:[4,4],pointRadius:0,tension:0}
+      ]},
+      options:{
+        animation:false, responsive:true, maintainAspectRatio:true,
+        plugins:{legend:{labels:{font:{size:10},boxWidth:12,padding:6}}},
+        scales:{
+          x:{ticks:{font:{size:9},maxTicksLimit:6,maxRotation:0},grid:{display:false}},
+          y:{min:14,max:32,ticks:{font:{size:9},stepSize:4},grid:{color:'rgba(0,0,0,0.05)'}}
+        }
+      }
+    });
+
+    // ── Detection Log ────────────────────────────────────────────────────
+    let _lastLogKey = null;
+    function addLog(occ, conf, janitorActive, pc) {
+      const key = `${occ}-${janitorActive}-${pc}`;
+      if(key === _lastLogKey) return; _lastLogKey = key;
+      const container = document.getElementById('log-container');
+      const ts = new Date().toTimeString().slice(0,8);
+      const dotCls = janitorActive ? 'janitor' : occ.toLowerCase();
+      const msg = janitorActive ? '🧹 Janitor detected — AC OFF' : `👥 ${pc} student${pc!==1?'s':''} — ${occ} occupancy`;
+      const entry = document.createElement('div'); entry.className='log-entry';
+      entry.innerHTML=`<span class="log-time">${ts}</span><span class="log-dot ${dotCls}"></span><span class="log-msg">${msg}</span><span class="log-conf">${Math.round(conf*100)}%</span>`;
+      container.insertBefore(entry, container.firstChild);
+      while(container.children.length>50) container.removeChild(container.lastChild);
+    }
+
+    // ── Poll Loop ────────────────────────────────────────────────────────
+    let _chartTick = 0;
+    async function poll() {
+      try {
+        const r = await fetch('/api/status');
+        const d = await r.json();
+
+        // If video is stopped or not loaded, force clear and reset UI
+        if (d.video_loaded === false) {
+          document.getElementById('conf-bar').style.width = '0%';
+          document.getElementById('conf-badge').textContent = '0%';
+          document.getElementById('ac-temp-badge').textContent = '--°C';
+          document.getElementById('ac-state-sub').textContent = 'STATE - OFF';
+          document.getElementById('ac-glow-strip').className = 'ac-glow-strip';
+          document.getElementById('avatar-face').textContent = '🙁';
+          document.getElementById('avatar-face').className = 'avatar-face';
+          document.getElementById('speech-bubble').textContent = 'AC is OFF, no video running';
+          document.getElementById('m-people-num').textContent = '0';
+          document.getElementById('m-cooling-num').textContent = '--°C';
+          document.getElementById('people-bar').style.width = '0%';
+          document.getElementById('cooling-bar').style.width = '0%';
+          document.getElementById('card-occ').textContent = 'OFF';
+          document.getElementById('card-count').textContent = '0';
+          document.getElementById('card-fans').textContent = '0 fans';
+          document.getElementById('card-runtime').textContent = '00:00:00';
+          document.getElementById('janitor-alert').style.display = 'none';
+
+          if (tempChart.data.labels.length > 0) {
+            tempChart.data.labels = [];
+            tempChart.data.datasets[0].data = [];
+            tempChart.data.datasets[1].data = [];
+            tempChart.update();
+          }
+          return;
+        }
+
+        const occ=d.occupancy||'LOW', pc=d.person_count||0, acOn=d.ac_on;
+        const janitorActive=d.janitor_active, janitorRem=d.janitor_remaining||0;
+        const conf=d.confidence||0, roomTemp=d.room_temp||30, targetTemp=d.target_temp||null;
+
+        // Janitor banner
+        const jb=document.getElementById('janitor-alert');
+        if(janitorActive){jb.style.display='flex'; document.getElementById('janitor-timer').textContent=janitorRem.toFixed(1)+'s';}
+        else jb.style.display='none';
+
+        // Confidence
+        document.getElementById('conf-bar').style.width=Math.round(conf*100)+'%';
+        document.getElementById('conf-badge').textContent=Math.round(conf*100)+'%';
+
+        // Target temp
+        if(targetTemp){currentTargetTemp=targetTemp; document.getElementById('ac-target-display').textContent=targetTemp+'°C';}
+
+        // Avatar
+        const av=document.getElementById('avatar-face'), sp=document.getElementById('speech-bubble');
+        if(janitorActive){av.textContent='🧹';av.className='avatar-face';sp.textContent=`Janitor cleaning (AC OFF for ${janitorRem.toFixed(1)}s)`;}
+        else if(!acOn){av.textContent='🙁';av.className='avatar-face';sp.textContent='AC is OFF, all quiet';}
+        else if(occ==='MEDIUM'){av.textContent='😊';av.className='avatar-face medium';sp.textContent=`Cooling to ${targetTemp}°C (Medium occupancy)`;}
+        else{av.textContent='😃';av.className='avatar-face high';sp.textContent=`Cooling to ${targetTemp}°C (High occupancy)`;}
+
+        // AC widget
+        document.getElementById('ac-temp-badge').textContent=targetTemp?`${targetTemp}°C`:'--°C';
+        document.getElementById('ac-state-sub').textContent=acOn?`STATE - ON (${targetTemp}°C)`:'STATE - OFF';
+        document.getElementById('ac-glow-strip').className=acOn?'ac-glow-strip cooling':'ac-glow-strip';
+
+        // Metric bars
+        document.getElementById('m-people-num').textContent=pc;
+        document.getElementById('m-cooling-num').textContent=targetTemp?`${targetTemp}°C`:'--°C';
+        document.getElementById('people-bar').style.width=Math.min(100,(pc/20)*100)+'%';
+        document.getElementById('cooling-bar').style.width=targetTemp?Math.min(100,Math.max(0,((30-targetTemp)/12)*100))+'%':'0%';
+
+        // Mini cards
+        document.getElementById('card-occ').textContent = janitorActive ? 'OFF' : occ;
+        document.getElementById('card-count').textContent = pc;
+        document.getElementById('card-fans').textContent = (janitorActive || !acOn) ? '0 fans' : (occ === 'HIGH' ? '4 fans' : '2 fans');
+        document.getElementById('card-runtime').textContent = d.ac_runtime_str || '00:00:00';
+
+        // ── AC Temp Chart: update every 2s ──
+        _chartTick++;
+        if (_chartTick % 4 === 0) {
+          const ts = new Date().toTimeString().slice(0,8);
+          tempChart.data.labels.push(ts);
+          tempChart.data.datasets[0].data.push(parseFloat(roomTemp.toFixed(1)));
+          tempChart.data.datasets[1].data.push(targetTemp || null);
+          if (tempChart.data.labels.length > 60) {
+            tempChart.data.labels.shift();
+            tempChart.data.datasets[0].data.shift();
+            tempChart.data.datasets[1].data.shift();
+          }
+          tempChart.update('none');
+        }
+
+        // ── Detection Log ──
+        addLog(occ, conf, janitorActive, pc);
+
+      } catch(e) {}
+    }
+
+    poll();
+    setInterval(poll, 500);
+  </script>
+</body>
+</html>
