@@ -1,0 +1,10 @@
+{
+  "num_classes": 2,
+  "class_names": [
+    "student",
+    "janitor"
+  ],
+  "confidence_threshold": 0.45,
+  "model_architecture": "YOLOv8n",
+  "version": 5
+}

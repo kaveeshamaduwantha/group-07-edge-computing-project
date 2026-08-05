@@ -1,0 +1,8 @@
+{
+  "class_names": [
+    "high",
+    "low",
+    "medium"
+  ],
+  "image_size": 224
+}
